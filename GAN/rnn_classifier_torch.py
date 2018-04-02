@@ -2,48 +2,29 @@ import numpy as np
 import torch
 
 class RnnClassifier(torch.nn.Module):
-    def __init__(self, vocab, n_topics):
+    def __init__(self, embedding_dim, n_topics):
+        # print(self.__class__,super(RnnClassifier, self).__class__)
         
         super(RnnClassifier, self).__init__()
         
-        self.words = vocab.words
-        
-        self.embeddings = vocab.embeddings
-        self.vocab_size, self.embedding_dim = self.embeddings.shape
-        self.max_sent_length = vocab.max_sent_length
+        self.embedding_dim = embedding_dim
         
         self.is_cuda = False
         self.n_topics = n_topics
         self.create_graph()
 
 
-    def forward(self, inp, mask):
-        inp = torch.from_numpy(inp)
-        mask = torch.autograd.Variable(torch.from_numpy(mask).float(), requires_grad=False)
-        indices = torch.LongTensor(inp)
-        
+    def forward(self, embeds, mask):
 
-        if self.is_cuda:
-            inp = inp.cuda()
-            mask = mask.cuda()
-            indices = indices.cuda()
 
         
-        embeds = self.word_embeddings(indices)
+        # embeds = self.word_embeddings(indices)
+        #embeds = self.dropout(embeds)
         _, (unrolled, _) = self.rnn_cell(embeds)
-        # print(unrolled.size())
-        # unrolled = torch.cat((unrolled[0], unrolled[1]), dim=1)
         unrolled = unrolled[0, :, :]
-        # print(unrolled.size())
-        # print(unrolled.size())
-        relu = torch.nn.functional.relu(self.dense(unrolled))
-        # print(relu.size())
-        logits = self.logits_layer(relu)
+        logits = self.dense_net(unrolled)
         probs = self.softmax_layer(logits)
 
-        # gc.collect()
-
-        # print(probs.size(), logits.size())
         
         return logits, probs
 
@@ -51,10 +32,6 @@ class RnnClassifier(torch.nn.Module):
     def get_loss(self, inp, mask, inp_y):
         logits, probs = self.forward(inp, mask)
 
-        inp_y = torch.autograd.Variable(torch.from_numpy(inp_y.argmax(axis=1)))
-
-        if self.cuda:
-            inp_y = inp_y.cuda()
 
 
         loss = self.loss_function(logits, inp_y)
@@ -62,16 +39,14 @@ class RnnClassifier(torch.nn.Module):
         return loss
 
 
-    def step(self, inp, mask, inp_y):
+    # def step(self, inp, mask, inp_y, optimizer):
         
-        loss = self.get_loss(inp, mask, inp_y)
-        self.optimizer.zero_grad()
-        loss.backward()
-        opt = self.optimizer.step()
+    #     loss = self.get_loss(inp, mask, inp_y)
+    #     self.optimizer.zero_grad()
+    #     loss.backward()
+    #     opt = optimizer.step()
 
-
-
-        return loss, opt
+    #     return loss, opt
 
 
     def cuda(self):
@@ -88,20 +63,22 @@ class RnnClassifier(torch.nn.Module):
     def create_graph(self):
     
         
-        self.word_embeddings = torch.nn.Embedding(self.vocab_size, self.embedding_dim)
-        self.word_embeddings.weight = torch.nn.Parameter(torch.from_numpy(self.embeddings).float(), requires_grad=False)
+        # self.word_embeddings = torch.nn.Embedding(self.vocab_size, self.embedding_dim)
+        # self.word_embeddings.weight = torch.nn.Parameter(torch.from_numpy(self.embeddings).float(), requires_grad=False)
 
         hidden_size = 128
 
         self.rnn_cell = torch.nn.LSTM(input_size=self.embedding_dim, hidden_size=hidden_size, num_layers=1, batch_first=True, bidirectional=False)
 
-        # dense_layer_size = 256
-        logits_layer_size = 256
-        self.dense = torch.nn.Linear(in_features=hidden_size, out_features=logits_layer_size)
-        self.logits_layer = torch.nn.Linear(in_features=logits_layer_size, out_features=self.n_topics)
+        self.dense_net = torch.nn.Sequential(
+            torch.nn.Linear(hidden_size, 256),
+            torch.nn.Dropout(),
+            torch.nn.ReLU(),
+            torch.nn.Linear(256, self.n_topics),
+        )
+
         self.softmax_layer = torch.nn.Softmax(dim=1)
         self.loss_function = torch.nn.CrossEntropyLoss()
 
-        self.optimizer = torch.optim.Adam(self.parameters())
-        
+
         

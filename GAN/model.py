@@ -104,7 +104,7 @@ class GAN(torch.nn.Module):
         self.classifier_optimizer = torch.optim.Adam(chain(self.classifier.parameters(), self.transformation_1.parameters(), self.transformation_2.parameters()))
 
     def orthogonalize(self):
-#        return
+        #return
         beta = 0.001
         W = self.transformation_2.weight.data
         W.copy_((1 + beta) * W - beta * W.mm(W.transpose(0, 1).mm(W)))
