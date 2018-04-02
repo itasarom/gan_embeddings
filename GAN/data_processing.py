@@ -140,6 +140,27 @@ def load_problem(lang, max_sent_length):
     return vocab, all_labels, sents, labels
 
 
+def write_embeds(file_path, embeds, words):
+    words = words[1:]
+    embeds = embeds[1:]
+    assert len(words) == len(embeds)
+    assert len(embeds.shape) == 2
+
+    with open(file_path, "w") as f:
+        print(len(words), embeds.shape[1], file=f)
+        for word, vector in zip(words, embeds):
+            s = " ".join([str(item) for item in vector])[:-1]
+            print(word, s, file=f)
+            # f.write(word + " ")
+
+
+def write_vocab(file_path, vocab):
+    words = vocab.words[1:]
+    embeds = vocab.embedddings[1:]
+
+    write_embeds(file_path, embeds, words)
+
+
 
 class DummyVocab:
     def __init__(self, max_sent_length=10):
