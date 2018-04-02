@@ -34,7 +34,7 @@ class BatchSamplerDiscriminator:
 
 
 class BatchSamplerRegularizer:
-    def __init__(self, vocab, all_labels, sents, labels, max_sent_length=None, validation_size=1024, test_size=1024):
+    def __init__(self, vocab, all_labels, sents, labels, max_sent_length=None, validation_size=1024, test_size=1024, seed=None):
         self.vocab = vocab
         self.sents = np.array(sents)
         self.labels = np.array(labels)
@@ -52,6 +52,7 @@ class BatchSamplerRegularizer:
         self.unique_labels = list(all_labels.keys())
         assert len(sents) == len(labels)
         
+        np.random.seed(seed)
         indices = np.random.permutation(np.arange(len(self.sents)))
         self.train_indices = indices[:len(self.sents) - (validation_size + test_size)]
         self.validation_indices = indices[len(self.sents) - (validation_size + test_size):len(self.sents) - test_size]
@@ -113,6 +114,8 @@ class BatchSamplerRegularizer:
         
     #         return self.get_batch(x, y)
             
+    def get_train_valid(self):
+        return self.prepare_batch(self.train[0][:self.valid_size], self.train[1][:self.valid_size])
     
     def get_valid(self):
         return self.prepare_batch(self.valid[0], self.valid[1])
