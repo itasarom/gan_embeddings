@@ -115,7 +115,8 @@ class BatchSamplerRegularizer:
     #         return self.get_batch(x, y)
             
     def get_train_valid(self):
-        return self.prepare_batch(self.train[0][:self.valid_size], self.train[1][:self.valid_size])
+        valid_size = len(self.valid[0])
+        return self.prepare_batch(self.train[0][:valid_size], self.train[1][:valid_size])
     
     def get_valid(self):
         return self.prepare_batch(self.valid[0], self.valid[1])

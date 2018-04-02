@@ -73,7 +73,7 @@ def plot_confusion_matrix(confusion_matrix):
 def describe(trainer, x, mask, y):
 
     acc, prec, rec, confusion_matrix = evaluate(trainer, x, mask, y)
-    plot_training(trainer)
+    #plot_training(trainer)
     plot_confusion_matrix(confusion_matrix)
 
     return acc, prec, rec
