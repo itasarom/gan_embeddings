@@ -5,6 +5,14 @@ import re
 import itertools
 from vocab import Vocab
 
+def normalize_embeddings(embeddings):
+    EPS = 1e-9
+    mean = embeddings[1:].mean(axis=0, keepdims=True)
+    se = (embeddings[1:].var(axis=0, keepdims=True)  + EPS )**0.5
+#     embeddings
+    embeddings = (embeddings - mean)/se
+    embeddings[0, :] = 0
+    return embeddings
 
 digits = set(string.digits)
 def normalize_sentence(sent):

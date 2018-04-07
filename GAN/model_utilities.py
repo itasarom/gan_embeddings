@@ -7,6 +7,8 @@ from IPython import display
 import sklearn
 from sklearn.metrics import log_loss, accuracy_score
 import evaluation
+import data_processing
+import os
 
 def unwrap_tensor(tensor, model):
     if model.is_cuda:
@@ -112,7 +114,7 @@ class Trainer:
         self.validation_iterations.append(epoch_id)
         print("after epoch_id")
         self.model.eval()
-        result = validate_embeddings(self.model, sents1.vocab.embeddings, sents2.vocab.embeddings, 200, use_cuda=self.model.is_cuda)
+        result = validate_embeddings(self.model, sents1.vocab, sents2.vocab, embeds1, embeds2, 200, use_cuda=self.model.is_cuda)
         print("Embedding accuracy ", result[0])
         self.embedding_accuracies.append(result[0])
         print("Embedding loss ", result[1])
@@ -327,10 +329,18 @@ def build_confusion_matrix(predicted_probs, true_y):
     return result
 
 
-def validate_embeddings(model, embeddings_1, embeddings_2, batch_size, use_cuda):
+def validate_embeddings(model, vocab1, vocab2, embeddings_1, embeddings_2, batch_size, use_cuda):
     probs_1, t1 = get_probs(model.transform1, model, embeddings_1, batch_size, use_cuda)
     probs_2, t2 = get_probs(model.transform2, model, embeddings_2, batch_size, use_cuda)
     probs = np.vstack([probs_1, probs_2])
+
+    t1 = data_processing.normalize_embeddings(t1)
+    t2 = data_processing.normalize_embeddings(t2)
+
+    data_processing.write_embeds("./embeds_1_tmp.vec", t1, vocab1.words)
+    data_processing.write_embeds("./embeds_2_tmp.vec", t2, vocab2.words)
+
+    os.system("./run_muse_validation.sh")
     
     pred_1 = probs_1.argmax(axis=1).reshape(-1, 1)
     pred_2 = probs_2.argmax(axis=1).reshape(-1, 1)    
