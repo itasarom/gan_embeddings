@@ -93,14 +93,18 @@ class GAN(torch.nn.Module):
                                 # torch.nn.Linear(self.embedding_dim, self.embedding_dim),
                             # )
         
-        # self.transformation_1 = IdentityTransformation()
-        self.transformation_1 = torch.nn.Linear(self.embedding_dim, self.embedding_dim, bias=True)
+        self.transformation_1 = IdentityTransformation()
+        #self.transformation_1 = torch.nn.Linear(self.embedding_dim, self.embedding_dim, bias=True)
 
         self.transformation_2 = torch.nn.Linear(self.embedding_dim, self.embedding_dim, bias=True)
 
 
-        self.disrciminator_optimizer = torch.optim.Adam(self.discriminator.parameters(), lr=0.001)
-        self.transformation_optimizer = torch.optim.Adam(chain(self.transformation_1.parameters(), self.transformation_2.parameters()), lr=0.001)
+        #self.discriminator_optimizer = torch.optim.Adam(self.discriminator.parameters(), lr=0.001)
+        self.discriminator_optimizer = torch.optim.SGD(self.discriminator.parameters(), lr=0.1)
+        self.discriminator_scheduler = torch.optim.lr_scheduler.StepLR(self.discriminator_optimizer, step_size=5000, gamma=0.98) 
+        #self.transformation_optimizer = torch.optim.Adam(chain(self.transformation_1.parameters(), self.transformation_2.parameters()), lr=0.001)
+        self.transformation_optimizer = torch.optim.SGD(chain(self.transformation_1.parameters(), self.transformation_2.parameters()), lr=0.1)
+        self.transformation_scheduler = torch.optim.lr_scheduler.StepLR(self.transformation_optimizer, step_size=25000, gamma=0.98) 
         self.classifier_optimizer = torch.optim.Adam(chain(self.classifier.parameters(), self.transformation_1.parameters(), self.transformation_2.parameters()))
 
     def orthogonalize(self):
@@ -109,6 +113,7 @@ class GAN(torch.nn.Module):
         W = self.transformation_2.weight.data
         W.copy_((1 + beta) * W - beta * W.mm(W.transpose(0, 1).mm(W)))
 
+        return 
         W = self.transformation_1.weight.data
         W.copy_((1 + beta) * W - beta * W.mm(W.transpose(0, 1).mm(W)))
 
@@ -203,9 +208,9 @@ class GAN(torch.nn.Module):
     def discriminator_step(self, x, y):
         
         loss = self.discriminator.get_loss(x, y)
-        self.disrciminator_optimizer.zero_grad()
+        self.discriminator_optimizer.zero_grad()
         loss.backward()
-        opt = self.disrciminator_optimizer.step()
+        opt = self.discriminator_optimizer.step()
 
         return loss, opt
 
