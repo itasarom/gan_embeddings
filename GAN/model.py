@@ -102,7 +102,7 @@ class GAN(torch.nn.Module):
         #self.discriminator_optimizer = torch.optim.Adam(self.discriminator.parameters(), lr=0.001)
         self.discriminator_optimizer = torch.optim.SGD(self.discriminator.parameters(), lr=0.1)
         self.discriminator_scheduler = torch.optim.lr_scheduler.StepLR(self.discriminator_optimizer, step_size=5000, gamma=0.98) 
-        #self.transformation_optimizer = torch.optim.Adam(chain(self.transformation_1.parameters(), self.transformation_2.parameters()), lr=0.1)
+        #self.transformation_optimizer = torch.optim.Adam(chain(self.transformation_1.parameters(), self.transformation_2.parameters()), lr=0.01)
         self.transformation_optimizer = torch.optim.SGD(chain(self.transformation_1.parameters(), self.transformation_2.parameters()), lr=0.1)
         self.transformation_scheduler = torch.optim.lr_scheduler.StepLR(self.transformation_optimizer, step_size=25000, gamma=0.98) 
         self.classifier_optimizer = torch.optim.Adam(chain(self.classifier.parameters(), self.transformation_1.parameters(), self.transformation_2.parameters()))
