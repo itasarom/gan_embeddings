@@ -2,8 +2,17 @@ from discriminator import Discriminator
 from rnn_classifier import RnnClassifier
 import torch
 import numpy as np
+import copy
 
 from itertools import chain
+
+def create_optimizer(params, optim_params):
+        if optim_params["class"] == "SGD":
+            optim_class = torch.optim.SGD
+        elif optim_params["class"] == "Adam":
+            optim_class = torch.optim.Adam
+
+        return optim_class(params, **optim_params["params"])
 
 class VocabTensors(torch.nn.Module):
     def __init__(self, embeddings, transformation=None, requires_grad=False):
@@ -46,20 +55,22 @@ class IdentityTransformation(torch.nn.Module):
 
 
 class GAN(torch.nn.Module):
-    def __init__(self, embedding_dim, n_topics):
+    def __init__(self, model_config):
         super(GAN, self).__init__()
 
-        self.embedding_dim = embedding_dim
-        self.n_topics = n_topics
+        self.model_config = copy.deepcopy(model_config)
+
+        self.embedding_dim = model_config["embedding_dim"]
+        self.n_topics = model_config["n_topics"]
 
 
 
-        self.discriminator = Discriminator(embedding_dim)
-        self.classifier = RnnClassifier(embedding_dim, n_topics)
+        self.discriminator = Discriminator(self.embedding_dim)
+        self.classifier = RnnClassifier(self.embedding_dim, self.n_topics)
 
-        n_hidden_1 = 1024
-        n_hidden_2 = 512
-        n_hidden_3 = 512
+        # n_hidden_1 = 1024
+        # n_hidden_2 = 512
+        # n_hidden_3 = 512
 
         # self.transformation_1 = torch.nn.Sequential (
         #                         torch.nn.Linear(self.embedding_dim, n_hidden_1),
@@ -92,30 +103,42 @@ class GAN(torch.nn.Module):
         # self.transformation_1 = torch.nn.Sequential (
                                 # torch.nn.Linear(self.embedding_dim, self.embedding_dim),
                             # )
-        
-        self.transformation_1 = IdentityTransformation()
-        #self.transformation_1 = torch.nn.Linear(self.embedding_dim, self.embedding_dim, bias=True)
 
-        self.transformation_2 = torch.nn.Linear(self.embedding_dim, self.embedding_dim, bias=True)
+        transformation_config = model_config["transformation_config"]
+        
+        t1_type = transformation_config["transform_1"]
+        if t1_type == "linear":
+            self.transformation_1 = torch.nn.Linear(self.embedding_dim, self.embedding_dim, bias=True)
+        elif t1_type == "identity":
+            self.transformation_1 = IdentityTransformation()
+
+        t2_type = transformation_config["transform_2"]
+        if t2_type == "linear":
+            self.transformation_2 = torch.nn.Linear(self.embedding_dim, self.embedding_dim, bias=True)
+        elif t1_type == "identity":
+            self.transformation_2 = IdentityTransformation()
 
 
         #self.discriminator_optimizer = torch.optim.Adam(self.discriminator.parameters(), lr=0.001)
-        self.discriminator_optimizer = torch.optim.SGD(self.discriminator.parameters(), lr=0.1)
-        self.discriminator_scheduler = torch.optim.lr_scheduler.StepLR(self.discriminator_optimizer, step_size=5000, gamma=0.98) 
+
+
+        self.discriminator_optimizer = create_optimizer(self.discriminator.parameters(), model_config["discriminator_optimizer"])
+        # self.discriminator_scheduler = torch.optim.lr_scheduler.StepLR(self.discriminator_optimizer, step_size=5000, gamma=0.98) 
         #self.transformation_optimizer = torch.optim.Adam(chain(self.transformation_1.parameters(), self.transformation_2.parameters()), lr=0.01)
-        self.transformation_optimizer = torch.optim.SGD(chain(self.transformation_1.parameters(), self.transformation_2.parameters()), lr=0.1)
-        self.transformation_scheduler = torch.optim.lr_scheduler.StepLR(self.transformation_optimizer, step_size=25000, gamma=0.98) 
-        self.classifier_optimizer = torch.optim.Adam(chain(self.classifier.parameters(), self.transformation_1.parameters(), self.transformation_2.parameters()))
+        self.transformation_optimizer = create_optimizer(chain(self.transformation_1.parameters(), self.transformation_2.parameters()), model_config["transformation_optimizer"])
+        # self.transformation_scheduler = torch.optim.lr_scheduler.StepLR(self.transformation_optimizer, step_size=25000, gamma=0.98) 
+        self.classifier_optimizer = create_optimizer(chain(self.classifier.parameters(), self.transformation_1.parameters(), self.transformation_2.parameters()), model_config["classifier_optimizer"])
 
     def orthogonalize(self):
         #return
-        beta = 0.001
-        W = self.transformation_2.weight.data
-        W.copy_((1 + beta) * W - beta * W.mm(W.transpose(0, 1).mm(W)))
+        beta = self.model_config["orthogonalization_beta"] #0.001
+        if hasattr(self.transformation_2, "weight"):
+            W = self.transformation_2.weight.data
+            W.copy_((1 + beta) * W - beta * W.mm(W.transpose(0, 1).mm(W)))
 
-        return 
-        W = self.transformation_1.weight.data
-        W.copy_((1 + beta) * W - beta * W.mm(W.transpose(0, 1).mm(W)))
+        if hasattr(self.transformation_1, "weight"):
+            W = self.transformation_1.weight.data
+            W.copy_((1 + beta) * W - beta * W.mm(W.transpose(0, 1).mm(W)))
 
     def numpy(self, tensor):
         if self.is_cuda:

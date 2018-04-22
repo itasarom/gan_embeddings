@@ -61,6 +61,30 @@ model_params = {
     "max_sent_length":100,
     "sentence_seed":42,
     "embedding_dim":300,
+    "transformation_config": {
+        "transform_1":"identity",
+        "transform_2":"linear",
+    },
+    "orthogonalization_beta":0.001,
+    "discriminator_optimizer":{
+        "class":"SGD",
+        "params":{
+            "lr":0.1
+        }
+    },
+
+    "transformation_optimizer":{
+        "class":"SGD",
+        "params":{
+            "lr":0.1
+        }
+    },
+
+    "classifier_optimizer":{
+        "class":"Adam",
+        "params":{
+        }
+    }
 }
 
 def main():
@@ -95,12 +119,14 @@ def main():
     vocab1.embeddings = dp.normalize_embeddings(vocab1.embeddings)
     vocab2.embeddings = dp.normalize_embeddings(vocab2.embeddings)
 
+    model_params["n_topics"] = len(all_labels)
+
     sent_sampler_1 = batch_samplers.BatchSamplerRegularizer(sents=sents1, labels=labels1, vocab=vocab1, all_labels=all_labels, max_sent_length=None, seed=model_params["sentence_seed"])
     sent_sampler_2 = batch_samplers.BatchSamplerRegularizer(sents=sents2, labels=labels2, vocab=vocab2, all_labels=all_labels, max_sent_length=None, seed=model_params["sentence_seed"])
     embed_sampler_1 = batch_samplers.BatchSamplerDiscriminator(vocab1)
     embed_sampler_2 = batch_samplers.BatchSamplerDiscriminator(vocab2)
 
-    cls = model.GAN(model_params["embedding_dim"], len(all_labels))
+    cls = model.GAN(model_params)
     if global_config["use_cuda"]:
         cls = cls.cuda()
     trainer = util.Trainer(cls)
