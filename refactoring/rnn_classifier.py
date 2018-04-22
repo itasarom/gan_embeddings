@@ -1,11 +1,14 @@
 import numpy as np
 import torch
+import copy
 
 class RnnClassifier(torch.nn.Module):
-    def __init__(self, embedding_dim, n_topics):
+    def __init__(self, embedding_dim, n_topics, config):
         # print(self.__class__,super(RnnClassifier, self).__class__)
         
         super(RnnClassifier, self).__init__()
+
+        self.config = config
         
         self.embedding_dim = embedding_dim
         
@@ -67,12 +70,14 @@ class RnnClassifier(torch.nn.Module):
         # self.word_embeddings = torch.nn.Embedding(self.vocab_size, self.embedding_dim)
         # self.word_embeddings.weight = torch.nn.Parameter(torch.from_numpy(self.embeddings).float(), requires_grad=False)
 
-        hidden_size = 128
+        # hidden_size = 128
+        hidden_size = self.config["hidden_size"]
 
         self.rnn_cell = torch.nn.LSTM(input_size=self.embedding_dim, hidden_size=hidden_size, num_layers=1, batch_first=True, bidirectional=False)
 
         # dense_layer_size = 256
-        logits_layer_size = 256
+        # logits_layer_size = 256
+        logits_layer_size = self.config["logits_layer_size"]
         self.dense = torch.nn.Linear(in_features=hidden_size, out_features=logits_layer_size)
         self.logits_layer = torch.nn.Linear(in_features=logits_layer_size, out_features=self.n_topics)
         self.softmax_layer = torch.nn.Softmax(dim=1)
@@ -80,4 +85,4 @@ class RnnClassifier(torch.nn.Module):
 
 
         
-        self.dropout = torch.nn.Dropout()
+        self.dropout = torch.nn.Dropout(p=self.config["dropout_rate"])

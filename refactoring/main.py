@@ -84,7 +84,18 @@ model_params = {
         "class":"Adam",
         "params":{
         }
-    }
+    },
+
+    "classifier_config":{
+        "hidden_size":128,
+        "logits_layer_size":256,
+        "dropout_rate":0.5,
+    },
+
+    "discriminator_config":{
+        "n_hidden_1":2048,
+         "n_hidden_2":2048,
+    },
 }
 
 def main():

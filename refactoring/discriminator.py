@@ -1,11 +1,14 @@
 import numpy as np
 import torch
+import copy
 
 class Discriminator(torch.nn.Module):
-    def __init__(self, embedding_dim):
+    def __init__(self, embedding_dim, config):
         super(Discriminator, self).__init__()
         
         self.embedding_dim = embedding_dim
+
+        self.config = copy.copy(config)
         
         self.create_graph()
 
@@ -50,8 +53,10 @@ class Discriminator(torch.nn.Module):
             
     def create_graph(self):
     
-        n_hidden_1 = 2048
-        n_hidden_2 = 2048
+        # n_hidden_1 = 2048
+        # n_hidden_2 = 2048
+        n_hidden_1 = self.config["n_hidden_1"]
+        n_hidden_2 = self.config["n_hidden_2"]
 
         self.actual_model = torch.nn.Sequential(
                 torch.nn.Linear(self.embedding_dim, n_hidden_1),

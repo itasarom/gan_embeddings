@@ -65,8 +65,8 @@ class GAN(torch.nn.Module):
 
 
 
-        self.discriminator = Discriminator(self.embedding_dim)
-        self.classifier = RnnClassifier(self.embedding_dim, self.n_topics)
+        self.discriminator = Discriminator(self.embedding_dim, model_config["discriminator_config"])
+        self.classifier = RnnClassifier(self.embedding_dim, self.n_topics, model_config["classifier_config"])
 
         # n_hidden_1 = 1024
         # n_hidden_2 = 512
