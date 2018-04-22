@@ -2,8 +2,8 @@ import tqdm
 import numpy as np
 import torch
 import datetime
-import matplotlib.pyplot as plt
-from IPython import display
+#import matplotlib.pyplot as plt
+#from IPython import display
 import sklearn
 from sklearn.metrics import log_loss, accuracy_score
 import evaluation
@@ -59,22 +59,22 @@ class Trainer:
         c, d, t = np.mean(classifier_losses), np.mean(discriminator_losses), np.mean(transformation_losses)
         # c, d, t = np.max(classifier_losses), np.max(discriminator_losses), np.max(transformation_losses)
 
-        display.clear_output(wait=True)
+#        display.clear_output(wait=True)
+
+        print("c d t", c, d, t)
+
+#        plt.title("current discriminator loss")
+#        plt.plot(discriminator_losses)
+#        plt.show()
 
 
+#        plt.title("current transformation loss")
+#        plt.plot(transformation_losses)
+#        plt.show()
 
-        plt.title("current discriminator loss")
-        plt.plot(discriminator_losses)
-        plt.show()
-
-
-        plt.title("current transformation loss")
-        plt.plot(transformation_losses)
-        plt.show()
-
-        plt.title("current classifier loss")
-        plt.plot(classifier_losses)
-        plt.show()
+#        plt.title("current classifier loss")
+#        plt.plot(classifier_losses)
+#        plt.show()
 
 
 
@@ -83,24 +83,24 @@ class Trainer:
         self.classifier_losses.append(c)
         self.discriminator_losses.append(d)
 
-        plt.title("classifier loss")
-        plt.plot(self.classifier_losses, color='green', label="train")
-        plt.plot(self.validation_iterations, self.sents1_loss, color='orange', label='sents_1')
-        plt.plot(self.validation_iterations, self.sents2_loss, color='blue', label='sents_2')
-        plt.legend()
-        plt.show()
+#        plt.title("classifier loss")
+#        plt.plot(self.classifier_losses, color='green', label="train")
+#        plt.plot(self.validation_iterations, self.sents1_loss, color='orange', label='sents_1')
+#        plt.plot(self.validation_iterations, self.sents2_loss, color='blue', label='sents_2')
+#        plt.legend()
+#        plt.show()
 
 
 
-        plt.title("discriminator loss")
-        plt.plot(self.discriminator_losses, color='green', label='train')
-        plt.plot(self.validation_iterations, self.validation_discriminator_losses, color='red', label='valid')
-        plt.legend()
-        plt.show()
+ #       plt.title("discriminator loss")
+ #       plt.plot(self.discriminator_losses, color='green', label='train')
+ #       plt.plot(self.validation_iterations, self.validation_discriminator_losses, color='red', label='valid')
+ #       plt.legend()
+ #       plt.show()
 
-        plt.title("transformation loss")
-        plt.plot(self.transformation_losses)
-        plt.show()
+  #      plt.title("transformation loss")
+  #      plt.plot(self.transformation_losses)
+  #      plt.show()
 
 
 
@@ -135,15 +135,15 @@ class Trainer:
         self.sents2_loss.append(loss)
         print("Sents2", acc, loss)
 
-        plt.title("Embedding accuracy")
-        plt.plot(self.validation_iterations, self.embedding_accuracies)
-        plt.show()
+   #     plt.title("Embedding accuracy")
+   #     plt.plot(self.validation_iterations, self.embedding_accuracies)
+   #     plt.show()
 
-        plt.title("Sents accuracy")
-        plt.plot(self.validation_iterations, self.sents1_accuracy, color='orange', label='sents_1')
-        plt.plot(self.validation_iterations, self.sents2_accuracy, color='blue', label='sents_2')
-        plt.legend()
-        plt.show()
+   #     plt.title("Sents accuracy")
+   #     plt.plot(self.validation_iterations, self.sents1_accuracy, color='orange', label='sents_1')
+   #     plt.plot(self.validation_iterations, self.sents2_accuracy, color='blue', label='sents_2')
+   #     plt.legend()
+   #     plt.show()
 
 
 
@@ -353,18 +353,18 @@ def validate_embeddings(model, vocab1, vocab2, embeddings_1, embeddings_2, batch
     loss = log_loss(y_pred=probs, y_true=y_true)
     cm = build_confusion_matrix(probs, y_true)
     
-    plt.hist(probs[y_true == 1, 1], bins=100, label="1", color='orange')
-    plt.hist(probs[y_true == 0, 1], bins=100, label="0", color='blue')
+    #plt.hist(probs[y_true == 1, 1], bins=100, label="1", color='orange')
+    #plt.hist(probs[y_true == 0, 1], bins=100, label="0", color='blue')
     
-    plt.legend()
-    plt.show()
+    #plt.legend()
+    #plt.show()
     
 
-    plt.hist(probs[y_true == 0, 1], bins=100, label="0", color='blue')
-    plt.hist(probs[y_true == 1, 1], bins=100, label="1", color='orange')
+    #plt.hist(probs[y_true == 0, 1], bins=100, label="0", color='blue')
+    #plt.hist(probs[y_true == 1, 1], bins=100, label="1", color='orange')
     
-    plt.legend()
-    plt.show()
+    #plt.legend()
+    #plt.show()
     
     t = np.vstack([t1, t2])
     
