@@ -53,6 +53,8 @@ class Trainer:
         self.sents2_loss = []
         self.validation_iterations = []
 
+        self.validation_metrics = defaultdict(list)
+
         self.all_params = {}
         
     def save(self, path):
@@ -129,30 +131,49 @@ class Trainer:
 
     def validate(self, epoch_id, sents1, sents2, embeds1, embeds2):
         
-        print("after epoch_id")
+        # print("after epoch_id")
+        logger.info("Validation")
+        logger.info("After global iteration %s", str(epoch_id))
+
         self.model.eval()
+
         result = validate_embeddings(self.model, sents1.vocab, sents2.vocab, embeds1, embeds2, 200, use_cuda=self.model.is_cuda)
-        print("Embedding accuracy ", result[0])
-        self.embedding_accuracies.append(result[0])
-        print("Embedding loss ", result[1])
-        self.validation_discriminator_losses.append(result[1])
-        print("Confusion matrix\n", result[2])
-        vars = result[-1].var(axis=0)
-        print("Min component variance {}, median component variance {}, mean component variance {}, max c v {}".format(
-                min(vars), np.median(vars), np.mean(vars), max(vars)
-            ))
+        logger.info("Embedding accuracy {}".format(result[0]))
 
-        acc, _, _, loss, _ = validate_sentences(sents1, self.model, self.model.transform1)
-        self.sents1_accuracy.append(acc[-1])
-        self.sents1_loss.append(loss)
-        print("Sents1", acc, loss)
+        self.validation_metrics["embedding_accuracies"].append(result[0])
+        # self.embedding_accuracies.append(result[0])
+        logger.info("Embedding loss {}".format(result[1]))
+        self.validation_metrics["validation_discriminator_losses"].append(result[1])
 
-        acc, _, _, loss, _ = validate_sentences(sents2, self.model, self.model.transform2)
-        self.sents2_accuracy.append(acc[-1])
-        self.sents2_loss.append(loss)
-        print("Sents2", acc, loss)
+        self.validation_metrics["translation"].append(result[-1])
+        # print("Confusion matrix\n", result[2])
+        # vars = result[-1].var(axis=0)
+        # print("Min component variance {}, median component variance {}, mean component variance {}, max c v {}".format(
+                # min(vars), np.median(vars), np.mean(vars), max(vars)
+            # ))
 
-        self.validation_iterations.append(epoch_id)
+        acc, _, _, loss, _ = validate_sentences(sents1.get_valid(), sents1, self.model, self.model.transform1)
+        self.validation_metrics["sents1_valid_accuracy"].append(acc[-1])
+        self.validation_metrics["sents1_valid_loss"].append(loss)
+        logger.info("Sents1 accuracy {}, loss {}".format(acc, loss))
+
+        acc, _, _, loss, _ = validate_sentences(sents2.get_valid(), sents2, self.model, self.model.transform2)
+        self.validation_metrics["sents2_valid_accuracy"].append(acc[-1])
+        self.validation_metrics["sents2_valid_loss"].append(loss)
+        logger.info("Sents2 accuracy {}, loss {}".format(acc, loss))
+
+        acc, _, _, loss, _ = validate_sentences(sents1.get_train_valid(), sents1, self.model, self.model.transform1)
+        self.validation_metrics["sents1_train_accuracy"].append(acc[-1])
+        self.validation_metrics["sents1_train_loss"].append(loss)
+        logger.info("Sents1 train accuracy {}, loss {}".format(acc, loss))
+
+        acc, _, _, loss, _ = validate_sentences(sents2.get_train_valid(), sents2, self.model, self.model.transform2)
+        self.validation_metrics["sents2_train_accuracy"].append(acc[-1])
+        self.validation_metrics["sents2_train_loss"].append(loss)
+        logger.info("Sents1 train accuracy {}, loss {}".format(acc, loss))
+
+        # self.validation_iterations.append(epoch_id)
+        self.validation_metrics["validation_iterations"].append(epoch_id)
 
    #     plt.title("Embedding accuracy")
    #     plt.plot(self.validation_iterations, self.embedding_accuracies)
@@ -174,8 +195,8 @@ class Trainer:
         save_every = params['save_every']
 
         if self.global_iterations > 0:
-            print("Already trained for {} global iterations, training further".format(self.global_iterations))
-            
+            logger.info("Already trained for {} global iterations, training further".format(self.global_iterations))
+    
         sent_valid_1 = sents1.get_valid()
         sent_valid_2 = sents2.get_valid()
 
@@ -365,14 +386,16 @@ def validate_embeddings(model, vocab1, vocab2, embeddings_1, embeddings_2, batch
 
     # os.system("./run_muse_validation.sh")
 
-    validation_result = evaluate_muse.run_muse_validation((vocab1, t1, model.model_config["src_lang"]), (vocab2, t2, model.model_config["tgt_lang"]), model.is_cuda)
+    validation_result = {}
+
+    validation_result["src_tgt"] = evaluate_muse.run_muse_validation((vocab1, t1, model.model_config["src_lang"]), (vocab2, t2, model.model_config["tgt_lang"]), model.is_cuda)
 
     logger.info("src-tgt")
-    logger.info(validation_result)
+    logger.info(validation_result["src_tgt"])
 
-    validation_result = evaluate_muse.run_muse_validation((vocab2, t2, model.model_config["tgt_lang"]), (vocab1, t1, model.model_config["src_lang"]), model.is_cuda)
+    validation_result["tgt_src"]  = evaluate_muse.run_muse_validation((vocab2, t2, model.model_config["tgt_lang"]), (vocab1, t1, model.model_config["src_lang"]), model.is_cuda)
     logger.info("tgt-src")
-    logger.info(validation_result)
+    logger.info(validation_result["tgt_src"])
     
     pred_1 = probs_1.argmax(axis=1).reshape(-1, 1)
     pred_2 = probs_2.argmax(axis=1).reshape(-1, 1)    
@@ -397,14 +420,18 @@ def validate_embeddings(model, vocab1, vocab2, embeddings_1, embeddings_2, batch
     
     #plt.legend()
     #plt.show()
-    
-    t = np.vstack([t1, t2])
-    
-    return acc, loss, cm, probs, y_true , t
+    embeddings = {}
+    embeddings["embeds1"] = t1
+    embeddings["embeds2"] = t2
 
-def validate_sentences(sent_sampler, model, transformation):
+    # complete_embeddings = np.vstack([t1, t2])
+    
+    return acc, loss, cm, probs, y_true, embeddings, validation_result
+
+def validate_sentences(data, sent_sampler, model, transformation):
     model.eval()
-    x, mask, y = sent_sampler.get_test()
+    x, mask, y = data
+    # x, mask, y = sent_sampler.get_test()
     true_y = np.zeros(shape=(len(y), len(sent_sampler.unique_labels)), dtype=np.int32)
     for idx, current_y in enumerate(y):
         true_y[idx, current_y] = 1
