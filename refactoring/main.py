@@ -39,7 +39,7 @@ global_config = {
     "trained_models":"trained_models_result",
     "data":"data_texts",
     "cuda":"7",
-    "use_cuda":True
+    "use_cuda":True,
     "evaluation_path":os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'crosslingual', 'dictionaries'),
     "evaluation_file_patterns":{"valid":"%s-%s.0-5000.txt","test":"%s-%s.5000-6500.txt"},
 }
@@ -104,7 +104,7 @@ def main():
     os.environ['CUDA_VISIBLE_DEVICES'] = global_config["cuda"]
 
     TASK_NAME = "diplom"
-    TRAINED_MODELS_FOLDER = os.path.join(os.path.abspath(os.path.join(__file__ ,"../")), global_config["trained_models"])
+    TRAINED_MODELS_FOLDER = os.path.join(os.path.abspath(os.path.join(__file__ ,"../../")), global_config["trained_models"])
     DATASET_DIR = os.path.join(os.path.abspath(os.path.join(__file__ ,"../")), global_config["data"])
 
     logger_config = LOGGING_BASE

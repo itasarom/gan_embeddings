@@ -101,7 +101,7 @@ class Evaluator(object):
                 path,
                 method=method
             )
-            to_log.update([('%s->%s:%s-%s' % (self.src_dico.lang, self.tgt_dico.lang, k, method), v) for k, v in results])
+            to_log.update([('%s-%s' % (k, method), v) for k, v in results])
 
     # def sent_translation(self, to_log):
     #     """

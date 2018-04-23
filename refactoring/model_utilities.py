@@ -137,7 +137,7 @@ class Trainer:
 
         self.model.eval()
 
-        result = validate_embeddings(self.model, sents1.vocab, sents2.vocab, embeds1, embeds2, 200, use_cuda=self.model.is_cuda)
+        result = self.validate_embeddings(self.model, sents1.vocab, sents2.vocab, embeds1, embeds2, 200, use_cuda=self.model.is_cuda)
         logger.info("Embedding accuracy {}".format(result[0]))
 
         self.validation_metrics["embedding_accuracies"].append(result[0])
@@ -152,22 +152,22 @@ class Trainer:
                 # min(vars), np.median(vars), np.mean(vars), max(vars)
             # ))
 
-        acc, _, _, loss, _ = validate_sentences(sents1.get_valid(), sents1, self.model, self.model.transform1)
+        acc, _, _, loss, _ = self.validate_sentences(sents1.get_valid(), sents1, self.model, self.model.transform1)
         self.validation_metrics["sents1_valid_accuracy"].append(acc[-1])
         self.validation_metrics["sents1_valid_loss"].append(loss)
         logger.info("Sents1 accuracy {}, loss {}".format(acc, loss))
 
-        acc, _, _, loss, _ = validate_sentences(sents2.get_valid(), sents2, self.model, self.model.transform2)
+        acc, _, _, loss, _ = self.validate_sentences(sents2.get_valid(), sents2, self.model, self.model.transform2)
         self.validation_metrics["sents2_valid_accuracy"].append(acc[-1])
         self.validation_metrics["sents2_valid_loss"].append(loss)
         logger.info("Sents2 accuracy {}, loss {}".format(acc, loss))
 
-        acc, _, _, loss, _ = validate_sentences(sents1.get_train_valid(), sents1, self.model, self.model.transform1)
+        acc, _, _, loss, _ = self.validate_sentences(sents1.get_train_valid(), sents1, self.model, self.model.transform1)
         self.validation_metrics["sents1_train_accuracy"].append(acc[-1])
         self.validation_metrics["sents1_train_loss"].append(loss)
         logger.info("Sents1 train accuracy {}, loss {}".format(acc, loss))
 
-        acc, _, _, loss, _ = validate_sentences(sents2.get_train_valid(), sents2, self.model, self.model.transform2)
+        acc, _, _, loss, _ = self.validate_sentences(sents2.get_train_valid(), sents2, self.model, self.model.transform2)
         self.validation_metrics["sents2_train_accuracy"].append(acc[-1])
         self.validation_metrics["sents2_train_loss"].append(loss)
         logger.info("Sents1 train accuracy {}, loss {}".format(acc, loss))
