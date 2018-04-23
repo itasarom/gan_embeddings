@@ -190,7 +190,100 @@ class Trainer:
    #     plt.plot(self.validation_iterations, self.sents2_accuracy, color='blue', label='sents_2')
    #     plt.legend()
    #     plt.show()
+    def validate_embeddings(self, model, vocab1, vocab2, embeddings_1, embeddings_2, batch_size, use_cuda):
+        probs_1, t1 = get_probs(model.transform1, model, embeddings_1, batch_size, use_cuda)
+        probs_2, t2 = get_probs(model.transform2, model, embeddings_2, batch_size, use_cuda)
+        probs = np.vstack([probs_1, probs_2])
 
+        t1 = data_processing.normalize_embeddings(t1)
+        t2 = data_processing.normalize_embeddings(t2)
+
+        # data_processing.write_embeds("./embeds_1_tmp.vec", t1, vocab1.words)
+        # data_processing.write_embeds("./embeds_2_tmp.vec", t2, vocab2.words)
+
+        # os.system("./run_muse_validation.sh")
+
+        validation_result = {}
+
+        # DIC_EVAL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'crosslingual', 'dictionaries')
+        DIC_EVAL_PATH = self.config["evaluation_path"]
+        # path = os.path.join(DIC_EVAL_PATH, '%s-%s.0-5000.txt' % (model.model_config["src_lang"], model.model_config["tgt_lang"]))
+
+        for pattern_name, validation_path_pattern in self.config["evaluation_file_patterns"].items():
+            path = os.path.join(DIC_EVAL_PATH, validation_path_pattern % (model.model_config["src_lang"], model.model_config["tgt_lang"]))
+            key = pattern_name + "_" + "src_tgt"
+            validation_result[key] = evaluate_muse.run_muse_validation((vocab1, t1, model.model_config["src_lang"]), (vocab2, t2, model.model_config["tgt_lang"]), path, model.is_cuda)
+
+            logger.info(key)
+            logger.info(validation_result[key])
+
+            key = pattern_name + "_" + "tgt_src"
+            path = os.path.join(DIC_EVAL_PATH, validation_path_pattern % (model.model_config["tgt_lang"], model.model_config["src_lang"]))
+            validation_result[key]  = evaluate_muse.run_muse_validation((vocab2, t2, model.model_config["tgt_lang"]), (vocab1, t1, model.model_config["src_lang"]), path, model.is_cuda)
+            logger.info(key)
+            logger.info(validation_result[key])
+        
+        pred_1 = probs_1.argmax(axis=1).reshape(-1, 1)
+        pred_2 = probs_2.argmax(axis=1).reshape(-1, 1)    
+        pred = np.vstack([pred_1, pred_2])
+        
+        y_true = np.concatenate([np.zeros((len(pred_1),)), np.ones((len(pred_2)))])
+        
+        
+        acc = accuracy_score(y_pred=pred, y_true=y_true)
+        loss = log_loss(y_pred=probs, y_true=y_true)
+        cm = build_confusion_matrix(probs, y_true)
+        
+        #plt.hist(probs[y_true == 1, 1], bins=100, label="1", color='orange')
+        #plt.hist(probs[y_true == 0, 1], bins=100, label="0", color='blue')
+        
+        #plt.legend()
+        #plt.show()
+        
+
+        #plt.hist(probs[y_true == 0, 1], bins=100, label="0", color='blue')
+        #plt.hist(probs[y_true == 1, 1], bins=100, label="1", color='orange')
+        
+        #plt.legend()
+        #plt.show()
+        embeddings = {}
+        embeddings["embeds1"] = t1
+        embeddings["embeds2"] = t2
+
+        # complete_embeddings = np.vstack([t1, t2])
+        
+        return acc, loss, cm, probs, y_true, embeddings, validation_result
+
+    def validate_sentences(self, data, sent_sampler, model, transformation):
+        model.eval()
+        x, mask, y = data
+        # x, mask, y = sent_sampler.get_test()
+        true_y = np.zeros(shape=(len(y), len(sent_sampler.unique_labels)), dtype=np.int32)
+        for idx, current_y in enumerate(y):
+            true_y[idx, current_y] = 1
+        
+        x, mask, y = model.prepare_data_for_classifier(x, mask, y, transformation)
+        
+        if model.is_cuda:
+            x = x.cuda()
+            y = y.cuda()
+            mask = mask.cuda()
+    
+
+    
+        loss = model.classifier.get_loss(x, mask, y).data.cpu().numpy()
+        probs = model.classifier(x, mask)[1].data.cpu().numpy()
+        
+        pred = np.argmax(probs, axis=1)
+        
+        acc = evaluation.accuracy(predicted_probs=probs, true_y=true_y)
+        prec = {}
+        rec = {}
+        for cls in range(true_y.shape[1]):
+            prec[cls] = evaluation.precision_by_class(probs, true_y, cls)
+            rec[cls] = evaluation.recall_by_class(probs, true_y, cls)
+        
+        return acc, prec, rec, loss, evaluation.build_confusion_matrix(probs, true_y)
 
 
     
@@ -380,90 +473,6 @@ def build_confusion_matrix(predicted_probs, true_y):
     return result
 
 
-def validate_embeddings(model, vocab1, vocab2, embeddings_1, embeddings_2, batch_size, use_cuda):
-    probs_1, t1 = get_probs(model.transform1, model, embeddings_1, batch_size, use_cuda)
-    probs_2, t2 = get_probs(model.transform2, model, embeddings_2, batch_size, use_cuda)
-    probs = np.vstack([probs_1, probs_2])
 
-    t1 = data_processing.normalize_embeddings(t1)
-    t2 = data_processing.normalize_embeddings(t2)
-
-    # data_processing.write_embeds("./embeds_1_tmp.vec", t1, vocab1.words)
-    # data_processing.write_embeds("./embeds_2_tmp.vec", t2, vocab2.words)
-
-    # os.system("./run_muse_validation.sh")
-
-    validation_result = {}
-
-    validation_result["src_tgt"] = evaluate_muse.run_muse_validation((vocab1, t1, model.model_config["src_lang"]), (vocab2, t2, model.model_config["tgt_lang"]), model.is_cuda)
-
-    logger.info("src-tgt")
-    logger.info(validation_result["src_tgt"])
-
-    validation_result["tgt_src"]  = evaluate_muse.run_muse_validation((vocab2, t2, model.model_config["tgt_lang"]), (vocab1, t1, model.model_config["src_lang"]), model.is_cuda)
-    logger.info("tgt-src")
-    logger.info(validation_result["tgt_src"])
-    
-    pred_1 = probs_1.argmax(axis=1).reshape(-1, 1)
-    pred_2 = probs_2.argmax(axis=1).reshape(-1, 1)    
-    pred = np.vstack([pred_1, pred_2])
-    
-    y_true = np.concatenate([np.zeros((len(pred_1),)), np.ones((len(pred_2)))])
-    
-    
-    acc = accuracy_score(y_pred=pred, y_true=y_true)
-    loss = log_loss(y_pred=probs, y_true=y_true)
-    cm = build_confusion_matrix(probs, y_true)
-    
-    #plt.hist(probs[y_true == 1, 1], bins=100, label="1", color='orange')
-    #plt.hist(probs[y_true == 0, 1], bins=100, label="0", color='blue')
-    
-    #plt.legend()
-    #plt.show()
-    
-
-    #plt.hist(probs[y_true == 0, 1], bins=100, label="0", color='blue')
-    #plt.hist(probs[y_true == 1, 1], bins=100, label="1", color='orange')
-    
-    #plt.legend()
-    #plt.show()
-    embeddings = {}
-    embeddings["embeds1"] = t1
-    embeddings["embeds2"] = t2
-
-    # complete_embeddings = np.vstack([t1, t2])
-    
-    return acc, loss, cm, probs, y_true, embeddings, validation_result
-
-def validate_sentences(data, sent_sampler, model, transformation):
-    model.eval()
-    x, mask, y = data
-    # x, mask, y = sent_sampler.get_test()
-    true_y = np.zeros(shape=(len(y), len(sent_sampler.unique_labels)), dtype=np.int32)
-    for idx, current_y in enumerate(y):
-        true_y[idx, current_y] = 1
-    
-    x, mask, y = model.prepare_data_for_classifier(x, mask, y, transformation)
-    
-    if model.is_cuda:
-        x = x.cuda()
-        y = y.cuda()
-        mask = mask.cuda()
-    
-
-    
-    loss = model.classifier.get_loss(x, mask, y).data.cpu().numpy()
-    probs = model.classifier(x, mask)[1].data.cpu().numpy()
-    
-    pred = np.argmax(probs, axis=1)
-    
-    acc = evaluation.accuracy(predicted_probs=probs, true_y=true_y)
-    prec = {}
-    rec = {}
-    for cls in range(true_y.shape[1]):
-        prec[cls] = evaluation.precision_by_class(probs, true_y, cls)
-        rec[cls] = evaluation.recall_by_class(probs, true_y, cls)
-    
-    return acc, prec, rec, loss, evaluation.build_confusion_matrix(probs, true_y)
 
     

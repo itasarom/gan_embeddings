@@ -14,7 +14,7 @@ import torch
 from ..utils import get_nn_avg_dist
 
 
-DIC_EVAL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'crosslingual', 'dictionaries')
+# DIC_EVAL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'crosslingual', 'dictionaries')
 
 
 logger = getLogger()
@@ -80,12 +80,12 @@ def load_dictionary(path, word2id1, word2id2):
     return dico
 
 
-def get_word_translation_accuracy(lang1, word2id1, emb1, lang2, word2id2, emb2, method):
+def get_word_translation_accuracy(lang1, word2id1, emb1, lang2, word2id2, emb2, path, method):
     """
     Given source and target word embeddings, and a dictionary,
     evaluate the translation accuracy using the precision@k.
     """
-    path = os.path.join(DIC_EVAL_PATH, '%s-%s.0-5000.txt' % (lang1, lang2))
+    # path = os.path.join(DIC_EVAL_PATH, '%s-%s.0-5000.txt' % (lang1, lang2))
     #path = os.path.join(DIC_EVAL_PATH, '%s-%s.5000-6500.txt' % (lang1, lang2))
     dico = load_dictionary(path, word2id1, word2id2)
     dico = dico.cuda() if emb1.is_cuda else dico

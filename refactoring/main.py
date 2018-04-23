@@ -40,6 +40,8 @@ global_config = {
     "data":"data_texts",
     "cuda":"7",
     "use_cuda":True
+    "evaluation_path":os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'crosslingual', 'dictionaries'),
+    "evaluation_file_patterns":{"valid":"%s-%s.0-5000.txt","test":"%s-%s.5000-6500.txt"},
 }
 
 training_params = {

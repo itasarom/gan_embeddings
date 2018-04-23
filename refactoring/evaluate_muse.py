@@ -41,7 +41,7 @@ def my_vocab_to_facebook(data, use_cuda):
     return result, embedding_result
 
 
-def run_muse_validation(src, tgt, use_cuda):
+def run_muse_validation(src, tgt, path, use_cuda):
     src_vocab, src_embeddings = my_vocab_to_facebook(src, use_cuda)
     tgt_vocab, tgt_embeddings = my_vocab_to_facebook(tgt, use_cuda)
 
@@ -50,7 +50,7 @@ def run_muse_validation(src, tgt, use_cuda):
     evaluator.monolingual_wordsim(to_log)
     # if params.tgt_lang:
     evaluator.crosslingual_wordsim(to_log)
-    evaluator.word_translation(to_log)
+    evaluator.word_translation(to_log, path)
     # evaluator.sent_translation(to_log)
 
     return to_log
