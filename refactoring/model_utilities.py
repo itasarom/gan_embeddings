@@ -43,15 +43,15 @@ class Trainer:
         # self.discriminator_losses = []
         
 
-        self.embedding_accuracies = []
-        self.validation_discriminator_losses = []
-        self.sents1_accuracy = []
-        self.sents2_accuracy = []
+        # self.embedding_accuracies = []
+        # self.validation_discriminator_losses = []
+        # self.sents1_accuracy = []
+        # self.sents2_accuracy = []
         # self.sents1_
-        self.sents_train_accuracy = []
-        self.sents1_loss = []
-        self.sents2_loss = []
-        self.validation_iterations = []
+        # self.sents_train_accuracy = []
+        # self.sents1_loss = []
+        # self.sents2_loss = []
+        # self.validation_iterations = []
 
         self.validation_metrics = defaultdict(list)
 
@@ -71,7 +71,7 @@ class Trainer:
 
 
     
-    def log_global_iteration(self, params, global_iteration, classifier_losses, discriminator_losses, transformation_losses):
+    def log_global_iteration(self, global_iteration, classifier_losses, discriminator_losses, transformation_losses):
         c, d, t = np.mean(classifier_losses), np.mean(discriminator_losses), np.mean(transformation_losses)
         # c, d, t = np.max(classifier_losses), np.max(discriminator_losses), np.max(transformation_losses)
 
@@ -99,7 +99,7 @@ class Trainer:
         self.training_metrics["classifier_losses"].append(c)
         self.training_metrics["discriminator_losses"].append(d)
 
-        with open(os.path.join(params["experiment_dir"], "train_log.pkl"), "wb") as f:
+        with open(os.path.join(self.config["experiment_dir"], "train_metrics.pkl"), "wb") as f:
             pickle.dump(self.training_metrics, f)
 
 #        plt.title("classifier loss")
@@ -175,6 +175,12 @@ class Trainer:
         # self.validation_iterations.append(epoch_id)
         self.validation_metrics["validation_iterations"].append(epoch_id)
 
+        with open(os.path.join(self.config["experiment_dir"], "validation_metrics.pkl"), "wb") as f:
+            pickle.dump(self.validation_metrics, f)
+
+        with open(os.path.join(self.config["experiment_dir"], "all_params.pkl"), "wb") as f:
+            pickle.dump(self.all_params, f)
+
    #     plt.title("Embedding accuracy")
    #     plt.plot(self.validation_iterations, self.embedding_accuracies)
    #     plt.show()
@@ -191,7 +197,7 @@ class Trainer:
     def train(self, sents1, sents2, embeds1, embeds2, params):
         self.all_params[self.global_iterations] = copy.deepcopy(params)
 
-        save_path = params['save_path']
+        # save_path = self.config[""]
         save_every = params['save_every']
 
         if self.global_iterations > 0:
@@ -282,7 +288,7 @@ class Trainer:
 
 
 
-            self.log_global_iteration(params, epoch_id, classifier_losses, discriminator_losses, transformation_losses)
+            self.log_global_iteration(epoch_id, classifier_losses, discriminator_losses, transformation_losses)
             if epoch_id % params["validate_every"] == 0:
                 self.validate(epoch_id, sents1, sents2, embeds1.vocab.embeddings, embeds2.vocab.embeddings)
 
@@ -319,12 +325,13 @@ class Trainer:
             self.global_iterations += 1
 
             if isinstance(save_every, int) and self.global_iterations % save_every == 0:
-                self.save(save_path)
+                self.save(os.path.join(self.config["experiment_dir"], "model_state.tc"))
 
 
         self.validate(epoch_id, sents1, sents2, embeds1.vocab.embeddings, embeds2.vocab.embeddings)
-        if save_every == "after":
-            self.save(save_path)
+        self.save(os.path.join(self.config["experiment_dir"], "final_state.tc"))
+        # if save_every == "after":
+            # self.save(save_path)
                 
     # def evaluate(self, x, mask):
     #     logits, probs = self.model.forward(x, mask)

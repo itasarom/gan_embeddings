@@ -43,7 +43,6 @@ global_config = {
 }
 
 training_params = {
-        'save_path': "./model_checkpoint.tc",
         'save_every':10,
         'sentence_iterations':10,
         'discr_iterations':5,
