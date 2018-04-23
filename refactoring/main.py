@@ -46,7 +46,8 @@ global_config = {
 
 training_params = {
         'save_every':10,
-        'sentence_iterations':10,
+        # 'sentence_iterations':10,
+        'sentence_iterations':0,
         'discr_iterations':5,
         'transform_iterations':25,
         'n_sents_1':256,
