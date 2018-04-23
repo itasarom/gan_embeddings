@@ -9,6 +9,12 @@ from sklearn.metrics import log_loss, accuracy_score
 import evaluation
 import data_processing
 import os
+import pickle
+import copy
+
+from launch_utils import logger
+
+from collections import defaultdict
 
 import evaluate_muse
 
@@ -24,14 +30,18 @@ def unwrap_tensor(tensor, model):
 
 
 class Trainer:
-    def __init__(self, model):
+    def __init__(self, model, config):
         self.model = model
                 
-        
-        self.classifier_losses = []
-        self.transformation_losses = []
-        self.discriminator_losses = []
         self.global_iterations = 0
+
+        self.training_metrics = defaultdict(list)
+        self.config = copy.deepcopy(config)
+
+        # self.classifier_losses = []
+        # self.transformation_losses = []
+        # self.discriminator_losses = []
+        
 
         self.embedding_accuracies = []
         self.validation_discriminator_losses = []
@@ -42,6 +52,8 @@ class Trainer:
         self.sents1_loss = []
         self.sents2_loss = []
         self.validation_iterations = []
+
+        self.all_params = {}
         
     def save(self, path):
         torch.save(self.model.state_dict(), path)
@@ -57,13 +69,13 @@ class Trainer:
 
 
     
-    def log_global_iteration(self, global_iteration, classifier_losses, discriminator_losses, transformation_losses):
+    def log_global_iteration(self, params, global_iteration, classifier_losses, discriminator_losses, transformation_losses):
         c, d, t = np.mean(classifier_losses), np.mean(discriminator_losses), np.mean(transformation_losses)
         # c, d, t = np.max(classifier_losses), np.max(discriminator_losses), np.max(transformation_losses)
 
 #        display.clear_output(wait=True)
 
-        print("c d t", c, d, t)
+        # print("c d t", c, d, t)
 
 #        plt.title("current discriminator loss")
 #        plt.plot(discriminator_losses)
@@ -78,12 +90,15 @@ class Trainer:
 #        plt.plot(classifier_losses)
 #        plt.show()
 
+        
 
+        logger.info("Iteration {}, classification loss {}, discrimination loss {}, transformation loss {}".format(global_iteration, c, d, t))
+        self.training_metrics["transformation_losses"].append(t)
+        self.training_metrics["classifier_losses"].append(c)
+        self.training_metrics["discriminator_losses"].append(d)
 
-        print("Iter {} class {}, discr{}, transform {}".format(global_iteration, c, d, t))
-        self.transformation_losses.append(t)
-        self.classifier_losses.append(c)
-        self.discriminator_losses.append(d)
+        with open(os.path.join(params["experiment_dir"], "train_log.pkl"), "wb") as f:
+            pickle.dump(self.training_metrics, f)
 
 #        plt.title("classifier loss")
 #        plt.plot(self.classifier_losses, color='green', label="train")
@@ -113,7 +128,7 @@ class Trainer:
     #     opt = self.classifier_optimizer.step()
 
     def validate(self, epoch_id, sents1, sents2, embeds1, embeds2):
-        self.validation_iterations.append(epoch_id)
+        
         print("after epoch_id")
         self.model.eval()
         result = validate_embeddings(self.model, sents1.vocab, sents2.vocab, embeds1, embeds2, 200, use_cuda=self.model.is_cuda)
@@ -137,6 +152,8 @@ class Trainer:
         self.sents2_loss.append(loss)
         print("Sents2", acc, loss)
 
+        self.validation_iterations.append(epoch_id)
+
    #     plt.title("Embedding accuracy")
    #     plt.plot(self.validation_iterations, self.embedding_accuracies)
    #     plt.show()
@@ -151,6 +168,8 @@ class Trainer:
 
     
     def train(self, sents1, sents2, embeds1, embeds2, params):
+        self.all_params[self.global_iterations] = copy.deepcopy(params)
+
         save_path = params['save_path']
         save_every = params['save_every']
 
@@ -218,7 +237,7 @@ class Trainer:
             classifier_accuracies = []
             classifier_losses = []
             for sent_iter_id  in range(params['sentence_iterations']):
-                    break
+                    # break
                     # break
                 # for i in range(params['sents_1_iter']):
                     x1, mask1, y1 = self.model.prepare_data_for_classifier(*sents1.get_batch(params['n_sents_1']), self.model.transformation_1)
@@ -242,7 +261,7 @@ class Trainer:
 
 
 
-            self.log_global_iteration(epoch_id, classifier_losses, discriminator_losses, transformation_losses)
+            self.log_global_iteration(params, epoch_id, classifier_losses, discriminator_losses, transformation_losses)
             if epoch_id % params["validate_every"] == 0:
                 self.validate(epoch_id, sents1, sents2, embeds1.vocab.embeddings, embeds2.vocab.embeddings)
 
@@ -282,6 +301,7 @@ class Trainer:
                 self.save(save_path)
 
 
+        self.validate(epoch_id, sents1, sents2, embeds1.vocab.embeddings, embeds2.vocab.embeddings)
         if save_every == "after":
             self.save(save_path)
                 
@@ -347,12 +367,12 @@ def validate_embeddings(model, vocab1, vocab2, embeddings_1, embeddings_2, batch
 
     validation_result = evaluate_muse.run_muse_validation((vocab1, t1, model.model_config["src_lang"]), (vocab2, t2, model.model_config["tgt_lang"]), model.is_cuda)
 
-    print("src-tgt")
-    print(validation_result)
+    logger.info("src-tgt")
+    logger.info(validation_result)
 
     validation_result = evaluate_muse.run_muse_validation((vocab2, t2, model.model_config["tgt_lang"]), (vocab1, t1, model.model_config["src_lang"]), model.is_cuda)
-    print("tgt-src")
-    print(validation_result)
+    logger.info("tgt-src")
+    logger.info(validation_result)
     
     pred_1 = probs_1.argmax(axis=1).reshape(-1, 1)
     pred_2 = probs_2.argmax(axis=1).reshape(-1, 1)    

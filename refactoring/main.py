@@ -7,6 +7,7 @@ import logging
 import logging.config
 
 
+
 import numpy as np
 import torch
 import pandas as pd
@@ -112,6 +113,9 @@ def main():
     latest_folder = find_latest_experiment(model_folder) if os.path.exists(model_folder) else None
     new_folder = create_new_experiment(model_folder, latest_folder)
 
+    global_config["experiment_dir"] = new_folder
+    training_params["experiment_dir"] = new_folder
+
 
     logger_config['handlers']['debug']['filename'] = os.path.join(new_folder, 'debug_logs')
     logger_config['handlers']['stdout']['filename'] = os.path.join(new_folder, 'stdout_logs')
@@ -145,7 +149,7 @@ def main():
     cls = model.GAN(model_params)
     if global_config["use_cuda"]:
         cls = cls.cuda()
-    trainer = util.Trainer(cls)
+    trainer = util.Trainer(cls, global_config)
 
     trainer.train(sent_sampler_1, sent_sampler_2, embed_sampler_1, embed_sampler_2, training_params)
     return 0
