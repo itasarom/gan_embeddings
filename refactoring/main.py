@@ -37,7 +37,7 @@ global_config = {
     "model_name":"debug",
     "trained_models":"trained_models_result",
     "data":"data_texts",
-    "cuda":"2",
+    "cuda":"7",
     "use_cuda":True
 }
 
@@ -51,7 +51,7 @@ training_params = {
         'n_sents_2':256,
         'n_discr_1':1024,
         'n_discr_2':1024,
-        'n_iter':1500,
+        'n_iter':2500,
         'validate_every':100
 }
 
@@ -111,6 +111,11 @@ def main():
     model_folder = os.path.join(TRAINED_MODELS_FOLDER, model_name)
     latest_folder = find_latest_experiment(model_folder) if os.path.exists(model_folder) else None
     new_folder = create_new_experiment(model_folder, latest_folder)
+
+
+    logger_config['handlers']['debug']['filename'] = os.path.join(new_folder, 'debug_logs')
+    logger_config['handlers']['stdout']['filename'] = os.path.join(new_folder, 'stdout_logs')
+    logging.config.dictConfig(logger_config)
 
     logger.info("Using python binary at {}".format(sys.executable))
 

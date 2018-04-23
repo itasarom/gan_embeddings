@@ -41,7 +41,7 @@ LOGGING_BASE = {
         },
         'debug': {
             'level':'DEBUG',
-            'class':'utils.launch_utils.DebugFileHandler',
+            'class':'launch_utils.DebugFileHandler',
             'formatter': 'verbose',
             'mode': 'w'
         }

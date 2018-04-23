@@ -10,6 +10,8 @@ import evaluation
 import data_processing
 import os
 
+import evaluate_muse
+
 def unwrap_tensor(tensor, model):
     if model.is_cuda:
         result = tensor.cpu().numpy()
@@ -216,6 +218,7 @@ class Trainer:
             classifier_accuracies = []
             classifier_losses = []
             for sent_iter_id  in range(params['sentence_iterations']):
+                    break
                     # break
                 # for i in range(params['sents_1_iter']):
                     x1, mask1, y1 = self.model.prepare_data_for_classifier(*sents1.get_batch(params['n_sents_1']), self.model.transformation_1)
@@ -337,10 +340,19 @@ def validate_embeddings(model, vocab1, vocab2, embeddings_1, embeddings_2, batch
     t1 = data_processing.normalize_embeddings(t1)
     t2 = data_processing.normalize_embeddings(t2)
 
-    data_processing.write_embeds("./embeds_1_tmp.vec", t1, vocab1.words)
-    data_processing.write_embeds("./embeds_2_tmp.vec", t2, vocab2.words)
+    # data_processing.write_embeds("./embeds_1_tmp.vec", t1, vocab1.words)
+    # data_processing.write_embeds("./embeds_2_tmp.vec", t2, vocab2.words)
 
-    os.system("./run_muse_validation.sh")
+    # os.system("./run_muse_validation.sh")
+
+    validation_result = evaluate_muse.run_muse_validation((vocab1, t1, model.model_config["src_lang"]), (vocab2, t2, model.model_config["tgt_lang"]), model.is_cuda)
+
+    print("src-tgt")
+    print(validation_result)
+
+    validation_result = evaluate_muse.run_muse_validation((vocab2, t2, model.model_config["tgt_lang"]), (vocab1, t1, model.model_config["src_lang"]), model.is_cuda)
+    print("tgt-src")
+    print(validation_result)
     
     pred_1 = probs_1.argmax(axis=1).reshape(-1, 1)
     pred_2 = probs_2.argmax(axis=1).reshape(-1, 1)    
