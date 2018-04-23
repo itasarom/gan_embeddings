@@ -121,6 +121,7 @@ def main():
     logging.config.dictConfig(logger_config)
 
     logger.info("Using python binary at {}".format(sys.executable))
+    logger.info("TRAINED_MODELS_FOLDER %s", TRAINED_MODELS_FOLDER)
 
     if torch.cuda.is_available() and global_config["use_cuda"]:
         logger.info('GPU found, running on device {}'.format(torch.cuda.current_device()))
