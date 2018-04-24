@@ -54,7 +54,7 @@ training_params = {
         'n_sents_2':256,
         'n_discr_1':1024,
         'n_discr_2':1024,
-        'n_iter':2500,
+        'n_iter':5000,
         'validate_every':100
 }
 
