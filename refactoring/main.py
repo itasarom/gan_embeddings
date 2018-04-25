@@ -35,6 +35,7 @@ logger, translate_to_all_loggers
 #     return embeddings
 
 global_config = {
+    "root":"/data/itasarom/diplom/gan_embeddings/",
     "model_name":"debug",
     "trained_models":"trained_models_result",
     "data":"data_texts",
@@ -99,14 +100,30 @@ model_params = {
         "n_hidden_1":2048,
          "n_hidden_2":2048,
     },
+
+    "embeddings_1_file_name":"embeddings.vec",
+    "texts_1_file_name":"contents.tsv", 
+    "labels_1_file_name":"labels.tsv",
+    "topics_1_file_name":"topics.csv",
+
+    "embeddings_2_file_name":"embeddings.vec",
+    "texts_2_file_name":"contents.tsv", 
+    "labels_2_file_name":"labels.tsv",
+    "topics_2_file_name":"topics.csv",
 }
 
 def main():
     os.environ['CUDA_VISIBLE_DEVICES'] = global_config["cuda"]
 
     TASK_NAME = "diplom"
-    TRAINED_MODELS_FOLDER = os.path.join(os.path.abspath(os.path.join(__file__ ,"../../")), global_config["trained_models"])
-    DATASET_DIR = os.path.join(os.path.abspath(os.path.join(__file__ ,"../")), global_config["data"])
+    # TRAINED_MODELS_FOLDER = os.path.join(os.path.abspath(os.path.join(__file__)), global_config["trained_models"])
+    # DATASET_DIR = os.path.join(os.path.abspath(os.path.join(__file__)), global_config["data"])
+
+    ROOT = global_config["root"]
+    TRAINED_MODELS_FOLDER = os.path.join(ROOT, global_config["trained_models"])
+    DATASET_DIR = os.path.join(ROOT, global_config["data"])
+
+    print(TRAINED_MODELS_FOLDER, DATASET_DIR)
 
     logger_config = LOGGING_BASE
 
@@ -137,8 +154,16 @@ def main():
     log_experiment_info(model_name, new_folder, latest_folder)
 
 
-    vocab1, all_labels, sents1, labels1 = dp.load_problem(lang=model_params["src_lang"], max_sent_length=model_params["max_sent_length"])
-    vocab2, all_labels, sents2, labels2 = dp.load_problem(lang=model_params["tgt_lang"], max_sent_length=model_params["max_sent_length"])
+    vocab1, all_labels, sents1, labels1 = dp.load_problem(lang=model_params["src_lang"], max_sent_length=model_params["max_sent_length"], 
+                                                            data_path=DATASET_DIR, embeddings_file_name=model_params["embeddings_1_file_name"], 
+                                                            texts_file_name=model_params["texts_1_file_name"], 
+                                                            labels_file_name=model_params["labels_1_file_name"], topics_file_name=model_params["topics_1_file_name"]
+                                                            )
+    vocab2, all_labels, sents2, labels2 = dp.load_problem(lang=model_params["tgt_lang"], max_sent_length=model_params["max_sent_length"],
+                                                            data_path=DATASET_DIR, embeddings_file_name=model_params["embeddings_2_file_name"], 
+                                                            texts_file_name=model_params["texts_2_file_name"], 
+                                                            labels_file_name=model_params["labels_2_file_name"], topics_file_name=model_params["topics_2_file_name"]
+                                                            )
     vocab1.embeddings = dp.normalize_embeddings(vocab1.embeddings)
     vocab2.embeddings = dp.normalize_embeddings(vocab2.embeddings)
 

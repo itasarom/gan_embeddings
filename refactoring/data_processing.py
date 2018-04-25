@@ -3,6 +3,8 @@ import numpy as np
 import string
 import re
 import itertools
+import os
+
 from vocab import Vocab
 
 def normalize_embeddings(embeddings):
@@ -101,7 +103,7 @@ def read_all_labels(file_path):
 
 
 
-def read_data(path, vocab, all_labels):
+def read_data(path, vocab, all_labels, texts_file_name, labels_file_name):
     def process_sentence(sent):
         tmp = []
         for word in normalize_sentence(sent):
@@ -113,8 +115,11 @@ def read_data(path, vocab, all_labels):
         return tmp
         
     
-    text_file = open(path + "/contents.tsv", "r")
-    label_file = open(path + "/labels.tsv", "r")
+    # text_file = open(path + "/contents.tsv", "r")
+    # label_file = open(path + "/labels.tsv", "r")
+
+    text_file = open(os.path.join(path, texts_file_name), "r")
+    label_file = open(os.path.join(path, labels_file_name), "r")
     
     sents = []
     labels = []
@@ -140,10 +145,13 @@ def read_data(path, vocab, all_labels):
         
         
 
-def load_problem(lang, max_sent_length):
-    vocab = Vocab("../data_texts/{}/embeddings.vec".format(lang), max_sent_length)
-    all_labels, all_labels_inverse  = read_all_labels("../data_texts/topics.csv")
-    sents, labels, n_topics = read_data("../data_texts/{}/".format(lang), vocab, all_labels)
+def load_problem(lang, max_sent_length, data_path, embeddings_file_name, texts_file_name, labels_file_name, topics_file_name):
+    # vocab = Vocab("../data_texts/{}/embeddings.vec".format(lang), max_sent_length)
+    vocab = Vocab(os.path.join(data_path, lang, embeddings_file_name), max_sent_length)
+    # all_labels, all_labels_inverse  = read_all_labels("../data_texts/topics.csv")
+    all_labels, all_labels_inverse  = read_all_labels(os.path.join(data_path, topics_file_name))
+    # sents, labels, n_topics = read_data("../data_texts/{}/".format(lang), vocab, all_labels)
+    sents, labels, n_topics = read_data(os.path.join(data_path, lang), vocab, all_labels, texts_file_name, labels_file_name)
 
     return vocab, all_labels, sents, labels
 
