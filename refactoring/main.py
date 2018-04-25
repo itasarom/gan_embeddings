@@ -39,10 +39,11 @@ global_config = {
     "model_name":"debug",
     "trained_models":"trained_models_result",
     "data":"data_texts",
-    "cuda":"7",
+    "cuda":"5",
     "use_cuda":True,
     "evaluation_path":os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'crosslingual', 'dictionaries'),
     "evaluation_file_patterns":{"valid":"%s-%s.0-5000.txt","test":"%s-%s.5000-6500.txt"},
+    "message":"Please kill me!"
 }
 
 training_params = {
@@ -53,9 +54,9 @@ training_params = {
         'transform_iterations':25,
         'n_sents_1':256,
         'n_sents_2':256,
-        'n_discr_1':1024,
-        'n_discr_2':1024,
-        'n_iter':10000,
+        'n_discr_1':1000,
+        'n_discr_2':1000,
+        'n_iter':500,
         'validate_every':100
 }
 
@@ -123,7 +124,7 @@ def main():
     TRAINED_MODELS_FOLDER = os.path.join(ROOT, global_config["trained_models"])
     DATASET_DIR = os.path.join(ROOT, global_config["data"])
 
-    print(TRAINED_MODELS_FOLDER, DATASET_DIR)
+    # print(TRAINED_MODELS_FOLDER, DATASET_DIR)
 
     logger_config = LOGGING_BASE
 
@@ -143,6 +144,13 @@ def main():
     logger.info("Using python binary at {}".format(sys.executable))
     logger.info("TRAINED_MODELS_FOLDER %s", TRAINED_MODELS_FOLDER)
 
+    with open(os.path.join(global_config["experiment_dir"], "README.txt"), "w") as f:
+        print(global_config["message"], file=f)
+        print("{} --> {}".format(model_params["src_lang"], model_params["tgt_lang"]), file=f)
+        print("iterations ", training_params["n_iter"], file=f)
+        print("transformations", model_params["transformation_config"], file=f)
+
+
     if torch.cuda.is_available() and global_config["use_cuda"]:
         logger.info('GPU found, running on device {}'.format(torch.cuda.current_device()))
     elif training_params.use_cuda:
@@ -152,7 +160,6 @@ def main():
         logger.debug('GPU found, but use_cuda=False, consider using GPU.')
 
     log_experiment_info(model_name, new_folder, latest_folder)
-
 
     vocab1, all_labels, sents1, labels1 = dp.load_problem(lang=model_params["src_lang"], max_sent_length=model_params["max_sent_length"], 
                                                             data_path=DATASET_DIR, embeddings_file_name=model_params["embeddings_1_file_name"], 
@@ -180,7 +187,13 @@ def main():
     trainer = util.Trainer(cls, global_config)
 
     trainer.train(sent_sampler_1, sent_sampler_2, embed_sampler_1, embed_sampler_2, training_params)
-    return 0
+    
+    with open(os.path.join(global_config["experiment_dir"], "SUCCESS.txt"), "w") as f:
+        pass
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except:
+        logger.exception("Failed")
