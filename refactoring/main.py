@@ -34,86 +34,95 @@ logger, translate_to_all_loggers
 #     embeddings[0, :] = 0
 #     return embeddings
 
-global_config = {
-    "root":"/data/itasarom/diplom/gan_embeddings/",
-    "model_name":"debug",
-    "trained_models":"trained_models_result",
-    "data":"data_texts",
-    "cuda":"5",
-    "use_cuda":True,
-    "evaluation_path":os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'crosslingual', 'dictionaries'),
-    "evaluation_file_patterns":{"valid":"%s-%s.0-5000.txt","test":"%s-%s.5000-6500.txt"},
-    "message":"Please kill me!"
-}
+# global_config = {
+#     "root":"/data/itasarom/diplom/gan_embeddings/",
+#     "model_name":"debug",
+#     "trained_models":"trained_models_result",
+#     "data":"data_texts",
+#     "cuda":"5",
+#     "use_cuda":True,
+#     "evaluation_path":os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'crosslingual', 'dictionaries'),
+#     "evaluation_file_patterns":{"valid":"%s-%s.0-5000.txt","test":"%s-%s.5000-6500.txt"},
+#     "message":"Please kill me!"
+# }
 
-training_params = {
-        'save_every':10,
-        'sentence_iterations':10,
-        # 'sentence_iterations':0,
-        'discr_iterations':5,
-        'transform_iterations':25,
-        'n_sents_1':256,
-        'n_sents_2':256,
-        'n_discr_1':1000,
-        'n_discr_2':1000,
-        'n_iter':500,
-        'validate_every':100
-}
+# training_params = {
+#         'save_every':10,
+#         'sentence_iterations':10,
+#         # 'sentence_iterations':0,
+#         'discr_iterations':5,
+#         'transform_iterations':25,
+#         'n_sents_1':256,
+#         'n_sents_2':256,
+#         'n_discr_1':1000,
+#         'n_discr_2':1000,
+#         'n_iter':500,
+#         'validate_every':100
+# }
 
-model_params = {
-    "src_lang":'en',
-    "tgt_lang":'es',
-    "max_sent_length":100,
-    "sentence_seed":42,
-    "embedding_dim":300,
-    "transformation_config": {
-        "transform_1":"identity",
-        "transform_2":"linear",
-    },
-    "orthogonalization_beta":0.001,
-    "discriminator_optimizer":{
-        "class":"SGD",
-        "params":{
-            "lr":0.1
-        }
-    },
+# model_params = {
+#     "src_lang":'en',
+#     "tgt_lang":'es',
+#     "max_sent_length":100,
+#     "sentence_seed":42,
+#     "embedding_dim":300,
+#     "transformation_config": {
+#         "transform_1":"identity",
+#         "transform_2":"linear",
+#     },
+#     "orthogonalization_beta":0.001,
+#     "discriminator_optimizer":{
+#         "class":"SGD",
+#         "params":{
+#             "lr":0.1
+#         }
+#     },
 
-    "transformation_optimizer":{
-        "class":"SGD",
-        "params":{
-            "lr":0.1
-        }
-    },
+#     "transformation_optimizer":{
+#         "class":"SGD",
+#         "params":{
+#             "lr":0.1
+#         }
+#     },
 
-    "classifier_optimizer":{
-        "class":"Adam",
-        "params":{
-        }
-    },
+#     "classifier_optimizer":{
+#         "class":"Adam",
+#         "params":{
+#         }
+#     },
 
-    "classifier_config":{
-        "hidden_size":128,
-        "logits_layer_size":256,
-        "dropout_rate":0.5,
-    },
+#     "classifier_config":{
+#         "hidden_size":128,
+#         "logits_layer_size":256,
+#         "dropout_rate":0.5,
+#     },
 
-    "discriminator_config":{
-        "n_hidden_1":2048,
-         "n_hidden_2":2048,
-    },
+#     "discriminator_config":{
+#         "n_hidden_1":2048,
+#          "n_hidden_2":2048,
+#     },
 
-    "embeddings_1_file_name":"embeddings.vec",
-    "texts_1_file_name":"contents.tsv", 
-    "labels_1_file_name":"labels.tsv",
-    "topics_1_file_name":"topics.csv",
+#     "embeddings_1_file_name":"embeddings.vec",
+#     "texts_1_file_name":"contents.tsv", 
+#     "labels_1_file_name":"labels.tsv",
+#     "topics_1_file_name":"topics.csv",
 
-    "embeddings_2_file_name":"embeddings.vec",
-    "texts_2_file_name":"contents.tsv", 
-    "labels_2_file_name":"labels.tsv",
-    "topics_2_file_name":"topics.csv",
-}
+#     "embeddings_2_file_name":"embeddings.vec",
+#     "texts_2_file_name":"contents.tsv", 
+#     "labels_2_file_name":"labels.tsv",
+#     "topics_2_file_name":"topics.csv",
+# }
 
 def main():
+
+    config_file = sys.argv[1]
+
+    with open(config_file, "r") as f:
+        config = json.loads(f.read())
+        global_config = config["global_config"]
+        model_params = config["model_params"]
+        training_params = config["training_params"]
+
     os.environ['CUDA_VISIBLE_DEVICES'] = global_config["cuda"]
 
     TASK_NAME = "diplom"
@@ -146,9 +155,13 @@ def main():
 
     with open(os.path.join(global_config["experiment_dir"], "README.txt"), "w") as f:
         print(global_config["message"], file=f)
+        print("config_file", os.path.abspath(config_file))
         print("{} --> {}".format(model_params["src_lang"], model_params["tgt_lang"]), file=f)
         print("iterations ", training_params["n_iter"], file=f)
         print("transformations", model_params["transformation_config"], file=f)
+
+    with open(os.path.join(global_config["experiment_dir"], "config.json"), "w") as f:
+        f.write(json.dumps(config))
 
 
     if torch.cuda.is_available() and global_config["use_cuda"]:

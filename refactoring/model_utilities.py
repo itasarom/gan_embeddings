@@ -1,4 +1,5 @@
 import tqdm
+import gc
 import numpy as np
 import torch
 import datetime
@@ -130,6 +131,8 @@ class Trainer:
     #     opt = self.classifier_optimizer.step()
 
     def validate(self, epoch_id, sents1, sents2, embeds1, embeds2):
+        gc.collect()
+        torch.cuda.empty_cache()
         
         # print("after epoch_id")
         logger.info("Validation")
