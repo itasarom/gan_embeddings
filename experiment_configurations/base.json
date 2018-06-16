@@ -1,0 +1,79 @@
+{
+    "global_config":{
+        "root":"/data/itasarom/diplom/gan_embeddings/",
+        "model_name":"en-es_sym_classifier_no_adversarial_10000",
+        "trained_models":"trained_models_result",
+        "data":"data_texts",
+        "cuda":"1",
+        "use_cuda":true,
+        "evaluation_path":"/data/itasarom/diplom/gan_embeddings/crosslingual/dictionaries",
+        "evaluation_file_patterns":{"valid":"%s-%s.0-5000.txt","test":"%s-%s.5000-6500.txt"},
+        "message":"Please kill me!"
+    },
+
+"training_params":{
+        "save_every":10,
+        "sentence_iterations":10,
+        "discr_iterations":0,
+        "transform_iterations":0,
+        "n_sents_1":256,
+        "n_sents_2":256,
+        "n_discr_1":1024,
+        "n_discr_2":1024,
+        "n_iter":10000,
+        "validate_every":100
+},
+
+    "model_params":{
+        "src_lang":"en",
+        "tgt_lang":"es",
+        "max_sent_length":100,
+        "sentence_seed":42,
+        "embedding_dim":300,
+        "transformation_config": {
+            "transform_1":"identity",
+            "transform_2":"linear"
+        },
+        "orthogonalization_beta":0.001,
+        "discriminator_optimizer":{
+            "class":"SGD",
+            "params":{
+                "lr":0.1
+            }
+        },
+
+        "transformation_optimizer":{
+            "class":"SGD",
+            "params":{
+                "lr":0.1
+            }
+        },
+
+        "classifier_optimizer":{
+            "class":"Adam",
+            "params":{
+            }
+        },
+
+        "classifier_config":{
+            "hidden_size":128,
+            "logits_layer_size":256,
+            "dropout_rate":0.5
+        },
+
+        "discriminator_config":{
+            "n_hidden_1":2048,
+             "n_hidden_2":2048
+        },
+
+        "embeddings_1_file_name":"embeddings.vec",
+        "texts_1_file_name":"contents.tsv", 
+        "labels_1_file_name":"labels.tsv",
+        "topics_1_file_name":"topics.csv",
+
+        "embeddings_2_file_name":"embeddings.vec",
+        "texts_2_file_name":"contents.tsv", 
+        "labels_2_file_name":"labels.tsv",
+        "topics_2_file_name":"topics.csv"
+    }
+}

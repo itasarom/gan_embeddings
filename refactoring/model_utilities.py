@@ -57,6 +57,7 @@ class Trainer:
         self.validation_metrics = defaultdict(list)
 
         self.all_params = {}
+        self.best_criterion_value = 0.0
         
     def save(self, path):
         torch.save(self.model.state_dict(), path)
@@ -219,12 +220,35 @@ class Trainer:
 
             logger.info(key)
             logger.info(validation_result[key])
+            if "selection_criterion" in self.config:
+                if key == self.config["selection_criterion"]["dataset_name"]:
+                    metric_name = self.config["selection_criterion"]["metric"]
+                    value = validation_result[key][metric_name]
+                    if value > self.best_criterion_value:
+                        self.best_criterion_value = value
+                        data_processing.write_embeds(os.path.join(self.config["experiment_dir"], "src_best.vec"), t1, vocab1.words)
+                        data_processing.write_embeds(os.path.join(self.config["experiment_dir"], "tgt_best.vec"), t2, vocab2.words)
+                        logger.info("Best criterion '{}.{}' increased {}".format(key, metric_name, value))
 
             key = pattern_name + "_" + "tgt_src"
             path = os.path.join(DIC_EVAL_PATH, validation_path_pattern % (model.model_config["tgt_lang"], model.model_config["src_lang"]))
             validation_result[key]  = evaluate_muse.run_muse_validation((vocab2, t2, model.model_config["tgt_lang"]), (vocab1, t1, model.model_config["src_lang"]), path, model.is_cuda)
             logger.info(key)
             logger.info(validation_result[key])
+
+            if "selection_criterion" in self.config:
+                if key == self.config["selection_criterion"]["dataset_name"]:
+                    metric_name = self.config["selection_criterion"]["metric"]
+                    value = validation_result[key][metric_name]
+                    if value > self.best_criterion_value:
+                        self.best_criterion_value = value
+                        data_processing.write_embeds(os.path.join(self.config["experiment_dir"], "src_best.vec"), t1, vocab1.words)
+                        data_processing.write_embeds(os.path.join(self.config["experiment_dir"], "tgt_best.vec"), t2, vocab2.words)
+                        logger.info("Best criterion '{}.{}' increased {}".format(key, metric_name, value))
+
+
+
+
         
         pred_1 = probs_1.argmax(axis=1).reshape(-1, 1)
         pred_2 = probs_2.argmax(axis=1).reshape(-1, 1)    
